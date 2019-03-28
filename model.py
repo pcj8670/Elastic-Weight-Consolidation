@@ -55,8 +55,9 @@ class Model:
                 self.fisher.append(np.zeros(self.var_list[v].get_shape().as_list()))
 
             # sampling a random class from softmax
-            probs = tf.nn.softmax(self.y)
-            class_ind = tf.to_int32(tf.multinomial(tf.log(probs), 1)[0][0])
+            self.probs = tf.nn.softmax(self.y)
+            self.class_ind = tf.to_int32(tf.multinomial(tf.log(self.probs), 1)[0][0])
+            self._ders = tf.gradients(tf.log(self.probs[0,self.class_ind]), self.var_list)
 
             if(plot_diffs):
                 # track differences in mean Fisher info
@@ -67,7 +68,7 @@ class Model:
                 # select random input image
                 im_ind = np.random.randint(imgset.shape[0])
                 # compute first-order derivatives
-                ders = sess.run(tf.gradients(tf.log(probs[0,class_ind]), self.var_list), feed_dict={self.x: imgset[im_ind:im_ind+1]})
+                ders = sess.run(self._ders, feed_dict={self.x: imgset[im_ind:im_ind+1]})
                 # square the derivatives and add to total
                 for v in range(len(self.fisher)):
                     self.fisher[v] += np.square(ders[v])
